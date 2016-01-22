@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
     }
 
     for (unsigned f = 0; f < F; ++f) {
-        vector<Sample> const &test = folds[f];
+        vector<Sample> const &val = folds[f];
         // collect training examples
         vector<Sample> train;
         for (unsigned i = 0; i < F; ++i) {
@@ -206,9 +206,9 @@ int main(int argc, char **argv) {
         }
         CHECK(fs::create_directories(fold_path));
         save_list(train, fold_path / fs::path("train.list"));
-        save_list(test, fold_path / fs::path("test.list"));
+        save_list(val, fold_path / fs::path("val.list"));
         import(train, root_dir, fold_path / fs::path("train"));
-        import(test, root_dir, fold_path / fs::path("test"));
+        import(val, root_dir, fold_path / fs::path("val"));
         if (!full) break;
     }
 
