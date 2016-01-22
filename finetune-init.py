@@ -6,14 +6,15 @@ import argparse
 import simplejson as json
 
 parser = argparse.ArgumentParser(description='init finetune directory.')
-parser.add_argument('dir', nargs=1)
+parser.add_argument('dir', nargs='?', default='.')
 args = parser.parse_args()
 
 logging.basicConfig(level=logging.DEBUG)
 
 outd = args.dir[0]
 
-os.mkdir(outd)
+if outd != '.':
+    os.mkdir(outd)
 
 params = {
         "template": "fcn",

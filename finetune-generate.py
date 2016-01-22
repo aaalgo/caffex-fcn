@@ -12,7 +12,7 @@ params = json.loads(params_json)
 TMPL_ROOT = os.path.join(os.path.dirname(__file__), "templates")
 TMPL_DIR = os.path.join(TMPL_ROOT, params['template'])
 
-TO_BE_REPLACED = ["train.prototxt", "val.prototxt", "deploy.prototxt", "solver.prototxt"]
+TO_BE_REPLACED = ["train.prototxt", "val.prototxt", "model/caffe.model", "solver.prototxt"]
 
 cmd = "cp -r %s/* ./" % TMPL_DIR
 subprocess.check_call(cmd, shell=True)
