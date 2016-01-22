@@ -3,7 +3,9 @@
 export GLOG_log_dir=log
 export GLOG_logtostderr=1
 
-CAFFE=./caffe.bin
+CAFFE=caffe
+
+mkdir -p log snapshots
 
 SNAP=$1
 if [ -z "$SNAP" ]
