@@ -29,7 +29,6 @@ params = {
         "snapshot_interval": 1000,
         "max_iter": 15000,
         "device": "GPU",
-    "data_type": "PicPocData"
 }
 
 params_json = json.dumps(params, sort_keys=False, indent=4 * ' ')
