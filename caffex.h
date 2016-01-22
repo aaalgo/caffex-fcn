@@ -1,10 +1,6 @@
 #include <opencv2/opencv.hpp>
 #define CPU_ONLY 1
 #include <caffe/caffe.hpp>
-#ifndef CAFFEX_IMPL
-#undef LOG
-#undef LOG_IF
-#endif
 #include <string>
 #include <vector>
 #include <boost/shared_ptr.hpp>
