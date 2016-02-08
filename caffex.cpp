@@ -6,8 +6,8 @@
 
 namespace caffex {
 
-Caffex::Caffex(string const& model_dir, unsigned batch)
-    : net(model_dir + "/caffe.model", TEST)
+Caffex::Caffex(string const& model_dir, unsigned batch, bool fix_shape_)
+    : net(model_dir + "/caffe.model", TEST), fix_shape(fix_shape_)
 {
 #ifdef CPU_ONLY
     Caffe::set_mode(Caffe::CPU);
@@ -26,7 +26,12 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
 
     net.CopyTrainedLayersFrom(model_dir + "/caffe.params");
     // resize to required batch size
-    input_blob->Reshape(input_batch, input_channels, 1, 1); // placeholder, not used anyway
+    int input_h = input_blob->shape(2);
+    int input_w = input_blob->shape(3);
+    if (!fix_shape_) {
+        input_h = input_w = 1;
+    }
+    input_blob->Reshape(input_batch, input_channels, input_h, input_w); // placeholder, not used anyway
     net.Reshape();
 
     // set mean file
@@ -81,11 +86,28 @@ void Caffex::preprocess(cv::Mat const &img, cv::Mat *channels) {
     else
     sample = img;
 
+    cv::Mat sample_resized;
+    if (fix_shape) {
+        cv::Size sz(input_blob->shape(3), input_blob->shape(2));
+        if (sz == sample.size()) {
+            sample_resized = sample;
+        }
+        else {
+            cv::resize(sample, sample_resized, sz);
+        }
+    }
+    else {
+        sample_resized = sample;
+    }
+
     cv::Mat sample_float;
-    if (input_channels == 3)
-    sample.convertTo(sample_float, CV_32FC3);
+    if ((sample_resized.type() == CV_32FC1) || (sample_resized.type() == CV_32FC3)) {
+        sample_float = sample_resized;
+    }
+    else if (input_channels == 3)
+    sample_resized.convertTo(sample_float, CV_32FC3);
     else
-    sample.convertTo(sample_float, CV_32FC1);
+    sample_resized.convertTo(sample_float, CV_32FC1);
 
     cv::Mat sample_normalized = sample_float - mean;
 
@@ -93,7 +115,6 @@ void Caffex::preprocess(cv::Mat const &img, cv::Mat *channels) {
    * input layer of the network because it is wrapped by the cv::Mat
    * objects in input_channels. */
     cv::split(sample_normalized, channels);
-
 }
 
 void Caffex::extractOutputValues (float *ptr, int output_dim, int n) {
@@ -112,12 +133,14 @@ void Caffex::extractOutputValues (float *ptr, int output_dim, int n) {
 }
 
 void Caffex::checkReshape (cv::Mat const &image) {
-    int input_height = input_blob->shape(2);
-    int input_width = input_blob->shape(3);
-    if ((input_width != image.cols)
-            || (input_height != image.rows)) {
-        input_blob->Reshape(input_batch, input_channels, image.rows, image.cols);
-        net.Reshape();
+    if (!fix_shape) {
+        int input_height = input_blob->shape(2);
+        int input_width = input_blob->shape(3);
+        if ((input_width != image.cols)
+                || (input_height != image.rows)) {
+            input_blob->Reshape(input_batch, input_channels, image.rows, image.cols);
+            net.Reshape();
+        }
     }
 }
 
@@ -147,8 +170,10 @@ void Caffex::apply (const cv::Mat &image, vector<float> *ft) {
 void Caffex::apply(vector<cv::Mat> const &images, cv::Mat *ft) {
     CHECK(!images.empty()) << "must input >= 1 images";
     CHECK(images.size() <= input_batch) << "Too many input images.";
-    for (unsigned i = 1; i < images.size(); ++i) {
-        CHECK(images[i].size() == images[0].size()) << "all images must be the same size";
+    if (!fix_shape) {
+        for (unsigned i = 1; i < images.size(); ++i) {
+            CHECK(images[i].size() == images[0].size()) << "all images must be the same size";
+        }
     }
     checkReshape(images[0]);
     int output_dim = dim(); // output dim changed after reshape
