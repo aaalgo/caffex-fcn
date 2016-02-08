@@ -6,8 +6,8 @@
 
 namespace caffex {
 
-Caffex::Caffex(string const& model_dir, unsigned batch, bool fix_shape_)
-    : net(model_dir + "/caffe.model", TEST), fix_shape(fix_shape_)
+Caffex::Caffex(string const& model_dir, unsigned batch)
+    : net(model_dir + "/caffe.model", TEST)
 {
 #ifdef CPU_ONLY
     Caffe::set_mode(Caffe::CPU);
@@ -28,8 +28,10 @@ Caffex::Caffex(string const& model_dir, unsigned batch, bool fix_shape_)
     // resize to required batch size
     int input_h = input_blob->shape(2);
     int input_w = input_blob->shape(3);
-    if (!fix_shape_) {
-        input_h = input_w = 1;
+    fix_shape = ((input_h > 1) && (input_w > 1));
+    if (!fix_shape) {
+        BOOST_VERIFY(input_h == 1);
+        BOOST_VERIFY(input_w == 1);
     }
     input_blob->Reshape(input_batch, input_channels, input_h, input_w); // placeholder, not used anyway
     net.Reshape();

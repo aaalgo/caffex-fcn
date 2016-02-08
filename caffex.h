@@ -42,7 +42,7 @@ class Caffex {
     void checkReshape (cv::Mat const &image);   // reshape network to image size
     int dim () const;
 public:
-    Caffex (const string& model_dir, unsigned batch = 1, bool fix_shape_ = false);
+    Caffex (const string& model_dir, unsigned batch = 1);
     void apply (cv::Mat const &, vector<float> *);
     void apply (vector<cv::Mat> const &, cv::Mat *);    // might not work, haven't been tested
 };
