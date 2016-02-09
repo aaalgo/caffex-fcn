@@ -37,11 +37,15 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
     net.Reshape();
 
     // set mean file
-    mean = 0;
+    means.push_back(0);
     string mean_file = model_dir + "/caffe.mean";
     std::ifstream test(mean_file.c_str());
     if (test) {
-        test >> mean;
+        means.clear();
+        float mean;
+        while (test >> mean) {
+            means.push_back(mean);
+        }
     }
     {
         string blobs_file = model_dir + "/blobs";
@@ -111,7 +115,13 @@ void Caffex::preprocess(cv::Mat const &img, cv::Mat *channels) {
     else
     sample_resized.convertTo(sample_float, CV_32FC1);
 
-    cv::Mat sample_normalized = sample_float - mean;
+    cv::Mat sample_normalized;
+    if (sample_float.depth() == 1) {
+        sample_normalized = sample_float - cv::Scalar(means[0]);
+    }
+    else {
+        sample_normalized = sample_float - cv::Scalar(means[0], means[1], means[2]);
+    }
 
     /* This operation will write the separate BGR planes directly to the
    * input layer of the network because it is wrapped by the cv::Mat

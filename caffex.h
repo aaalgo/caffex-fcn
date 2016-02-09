@@ -22,7 +22,7 @@ class Caffex {
     Net<float> net;
     int input_batch;
     int input_channels;
-    float mean;
+    vector<float> means;
     Blob<float> *input_blob;
     vector<shared_ptr<Blob<float>>> output_blobs;
 
