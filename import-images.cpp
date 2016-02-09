@@ -32,6 +32,8 @@ struct Sample {
     Rect_<float> box;
 };
 
+bool gray = false;
+
 void round (Rect_<float> const &from, Rect *to) {
     to->x = round(from.x);
     to->y = round(from.y);
@@ -43,16 +45,19 @@ Mat imreadx (string const &path) {
     Mat v = imread(path, -1);
     if (!v.data) return v;
     // TODO! support color image
-    if (v.channels() == 3) {
-        cv::cvtColor(v, v, CV_BGR2GRAY);
+    if (gray) {
+        if (v.channels() == 3) {
+            cv::cvtColor(v, v, CV_BGR2GRAY);
+        }
+        else CHECK(v.channels() == 1);
     }
-    else CHECK(v.channels() == 1);
+    else {
+        if (v.channels() == 1) {
+            cv::cvtColor(v, v, CV_GRAY2BGR);
+        }
+        else CHECK(v.channels() == 3);
+    }
     // always to gray
-    if (v.type() == CV_16UC1
-            || v.type() == CV_32FC1) {
-        normalize(v, v, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-    }
-    else CHECK(v.type() == CV_8UC1);
     return v;
 }
 
@@ -82,22 +87,25 @@ void import (vector<Sample> const &samples, string const &prefix, fs::path const
         Mat label(image.size(), CV_8UC1);
 
         // save label
+        Rect_<float> box = sample.box;
+        box.x *= image.cols;
+        box.width *= image.cols;
+        box.y *= image.rows;
+        box.height *= image.rows;
         Rect roi;
-        round(sample.box, &roi);
+        round(box, &roi);
         label.setTo(Scalar(0));
         label(roi).setTo(Scalar(1)); // TODO!
         caffe::CVMatToDatum(label, &datum);
         datum.set_label(0);
         CHECK(datum.SerializeToString(&value));
         label_txn->Put(key, value);
-#if 0
         static int debug_count = 0;
         Mat out;
         rectangle(image, roi, Scalar(255));
         hconcat(image, label, out);
         imwrite((boost::format("%d.png") % debug_count).str(), out);
         ++debug_count;
-#endif
 
         if (++count % 1000 == 0) {
             // Commit db
@@ -135,6 +143,7 @@ int main(int argc, char **argv) {
     ("root", po::value(&root_dir)->default_value(""), "make sure dir ends with /")
     ("fold,f", po::value(&F)->default_value(1), "")
     ("full", "")
+    ("gray", "")
     ("output,o", po::value(&output_dir), "")
     ;
 
@@ -153,6 +162,7 @@ int main(int argc, char **argv) {
     }
     CHECK(F >= 1);
     full = vm.count("full") > 0;
+    if (vm.count("gray")) gray = true;
 
     vector<Sample> samples;
     {

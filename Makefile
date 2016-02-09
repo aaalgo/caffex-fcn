@@ -13,7 +13,7 @@ LDLIBS =  -Wl,--whole-archive -lcaffe -Wl,--no-whole-archive \
 	 -lopenblas \
 	 -lunwind -lrt -lm -ldl
 
-PROGS = caffex-extract	caffex-predict batch-resize import-images
+PROGS = run caffex-extract	caffex-predict batch-resize import-images
 
 all:	$(PROGS)
 
@@ -22,5 +22,7 @@ caffex-extract:	caffex-extract.cpp caffex.cpp
 caffex-predict:	caffex-predict.cpp caffex.cpp
 
 caffex-compare:	caffex-compare.cpp caffex.cpp
+
+run:	run.cpp caffex.o
 
 batch-resize:	batch-resize.cpp
