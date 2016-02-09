@@ -118,7 +118,7 @@ void Caffex::preprocess(cv::Mat const &img, cv::Mat *channels) {
     sample_resized.convertTo(sample_float, CV_32FC1);
 
     cv::Mat sample_normalized;
-    if (sample_float.depth() == 1) {
+    if (sample_float.channels() == 1) {
         sample_normalized = sample_float - cv::Scalar(means[0]);
     }
     else {
