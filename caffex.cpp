@@ -38,6 +38,8 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
 
     // set mean file
     means.push_back(0);
+    means.push_back(0);
+    means.push_back(0);
     string mean_file = model_dir + "/caffe.mean";
     std::ifstream test(mean_file.c_str());
     if (test) {
@@ -120,6 +122,7 @@ void Caffex::preprocess(cv::Mat const &img, cv::Mat *channels) {
         sample_normalized = sample_float - cv::Scalar(means[0]);
     }
     else {
+        CHECK(means.size() >= 3);
         sample_normalized = sample_float - cv::Scalar(means[0], means[1], means[2]);
     }
 
