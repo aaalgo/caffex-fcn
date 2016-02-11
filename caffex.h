@@ -1,5 +1,4 @@
 #include <opencv2/opencv.hpp>
-#define CPU_ONLY 1
 #include <caffe/caffe.hpp>
 #include <string>
 #include <vector>
