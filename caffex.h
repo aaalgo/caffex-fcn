@@ -42,6 +42,9 @@ class Caffex {
     int dim () const;
 public:
     Caffex (const string& model_dir, unsigned batch = 1);
+    int batch () const {
+        return input_batch;
+    }
     void apply (cv::Mat const &, vector<float> *);
     void apply (vector<cv::Mat> const &, cv::Mat *);    // might not work, haven't been tested
 };
