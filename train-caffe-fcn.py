@@ -57,7 +57,7 @@ with open(os.path.join(tmp, 'list'), 'w') as f:
     for l in lines:
         f.write(l)
 
-subprocess.check_call("%s -f %d -R %d --list %s/list --output %s/db" % (os.path.join(bin_dir, "import-images"), FOLD, REP, tmp, tmp), shell=True)
+subprocess.check_call("%s -f %d -R %d --list %s/list --output %s/db --cache %s/cache" % (os.path.join(bin_dir, "import-images"), FOLD, REP, tmp, tmp, tmp), shell=True)
 subprocess.check_call("cd %s; %s" % (tmp, os.path.join(bin_dir, "finetune-generate.py")), shell=True)
 subprocess.check_call("cd %s; ./train.sh 2>&1 | tee train.log" % tmp, shell=True)
 subprocess.check_call("cd %s; grep solver.cpp train.log > solver.log" % tmp, shell=True)
