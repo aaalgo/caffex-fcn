@@ -96,13 +96,10 @@ print "BEST ACCURACY", best_acc, "AT SNAPSHOT", best_snap
 os.mkdir(output)
 shutil.copy(os.path.join(tmp, "deploy.prototxt"),
             os.path.join(output, "caffe.model"))
-shutil.copy(os.path.join(tmp, "mean.binaryproto"),
-            os.path.join(output, "caffe.mean"))
-shutil.copy(os.path.join(tmp, "snapshots", "caffenet_train_iter_%d.caffemodel" % best_snap),
+shutil.copy(os.path.join(tmp, "snapshots", "fcn_iter_%d.caffemodel" % best_snap),
             os.path.join(output, "caffe.params"))
 with open(os.path.join(output, "blobs"), "w") as f:
     f.write("prob\n")
-
 
 # generate lists
 #
