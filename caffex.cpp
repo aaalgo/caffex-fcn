@@ -6,7 +6,7 @@
 
 namespace caffex {
 
-static const cv::Size fcn_test_sz(17, 13);
+static const cv::Size fcn_test_sz(3, 7);
 
 Caffex::Caffex(string const& model_dir, unsigned batch)
     : net(model_dir + "/caffe.model", TEST)
