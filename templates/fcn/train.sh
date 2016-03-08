@@ -3,7 +3,7 @@
 export GLOG_log_dir=log
 export GLOG_logtostderr=1
 
-CAFFE=caffe
+CAFFE=caffe-fcn
 
 mkdir -p log snapshots
 
