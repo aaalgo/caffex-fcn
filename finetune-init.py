@@ -19,9 +19,9 @@ if outd != '.':
 params = {
         "template": "fcn",
         "backend": "LMDB",
-        "train_source": "train",
+        "train_source": "db/train",
         "train_batch": 1,
-        "val_source": "val",
+        "val_source": "db/val",
         "val_batch": 1,
         "val_batches": 19,
         "num_output": 2,
