@@ -4,25 +4,42 @@ import os
 import re
 import shutil
 import logging
-import argparse
+#import argparse
 import subprocess
 import simplejson as json
 
-parser = argparse.ArgumentParser(description='')
-parser.add_argument('input', nargs=1)
-parser.add_argument('output', nargs=1)
-parser.add_argument('tmp', nargs=1)
-args = parser.parse_args()
+#parser = argparse.ArgumentParser(description='')
+#parser.add_argument('input', nargs=1)
+#parser.add_argument('output', nargs=1)
+#parser.add_argument('tmp', nargs=1)
+#args = parser.parse_args()
 
 logging.basicConfig(level=logging.DEBUG)
 
-input = args.input[0]
-output = args.output[0]
-tmp = args.tmp[0]
-
-if not os.path.isdir(input):
-    logging.error("%s is not directory" % input)
+if len(sys.argv) < 4:
+    print "usage:  train-caffe.py <model> <tmp> <input> [<input> ...]"
     sys.exit(1)
+
+output = sys.argv[1]
+tmp = sys.argv[2]
+lists = sys.argv[3:]
+
+lines = []
+
+MAX_R = 2000
+
+for p in lists:
+    with open(p, 'r') as f:
+        lines.extend(f.readlines())
+        pass
+    pass
+
+NL = len(lines)
+print '%d lines.' % NL
+REP = (MAX_R + NL - 1) / NL
+print '%d replicates.' % REP
+FOLD = 8 
+
 if os.path.exists(output):
     logging.error("%s already exists" % output)
     sys.exit(1)
@@ -33,7 +50,14 @@ if os.path.exists(tmp):
 bin_dir = os.path.abspath(os.path.dirname(__file__))
 
 subprocess.check_call("%s %s" % (os.path.join(bin_dir, "finetune-init.py"), tmp), shell=True)
-subprocess.check_call("%s -F 5 -R 100 --list %s --output %s" % (os.path.join(bin_dir, "import-images"), input, tmp), shell=True)
+
+#cat_cmd = 'cat ' + ' '.join(lists) + ' > %s/list' % tmp
+#subprocess.check_call(cat_cmd, shell=True)
+with open(os.path.join(tmp, 'list'), 'w') as f:
+    for l in lines:
+        f.write(l)
+
+subprocess.check_call("%s -f %d -R %d --list %s/list --output %s/db" % (os.path.join(bin_dir, "import-images"), FOLD, REP, tmp, tmp), shell=True)
 subprocess.check_call("cd %s; %s" % (tmp, os.path.join(bin_dir, "finetune-generate.py")), shell=True)
 subprocess.check_call("cd %s; ./train.sh 2>&1 | tee train.log" % tmp, shell=True)
 subprocess.check_call("cd %s; grep solver.cpp train.log > solver.log" % tmp, shell=True)

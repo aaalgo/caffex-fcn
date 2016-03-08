@@ -11,7 +11,7 @@ args = parser.parse_args()
 
 logging.basicConfig(level=logging.DEBUG)
 
-outd = args.dir[0]
+outd = args.dir
 
 if outd != '.':
     os.mkdir(outd)
