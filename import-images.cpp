@@ -331,6 +331,9 @@ int main(int argc, char **argv) {
     ("output,o", po::value(&output_dir), "")
     ("timeout", po::value(&download_timeout)->default_value(5), "")
     ("agent", po::value(&download_agent), "")
+    ("replicate, R", &po::value(&replicate)->default_value(1), "")
+    ("sangle", po::value(&sampler_angle)->default_value(sampler_angle), "")
+    ("sscale", po::value(&sampler_scale)->default_value(sampler_scale), "")
     ;
 
     po::positional_options_description p;
