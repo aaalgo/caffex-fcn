@@ -6,6 +6,8 @@
 
 namespace caffex {
 
+static const cv::Size fcn_test_sz(17, 13);
+
 Caffex::Caffex(string const& model_dir, unsigned batch)
     : net(model_dir + "/caffe.model", TEST)
 {
@@ -32,6 +34,8 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
     if (!fix_shape) {
         BOOST_VERIFY(input_h == 1);
         BOOST_VERIFY(input_w == 1);
+        input_h = fcn_test_sz.height;
+        input_w = fcn_test_sz.width;
     }
     input_blob->Reshape(input_batch, input_channels, input_h, input_w); // placeholder, not used anyway
     net.Reshape();
@@ -57,6 +61,16 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
         while (is >> blob) {
             shared_ptr<Blob<float>> b = net.blob_by_name(blob);
             output_blobs.push_back(b);
+        }
+    }
+    fcn = false;
+    if (output_blobs.size() == 1) {
+        auto b = output_blobs[0];
+        int h = b->shape(2);
+        int w = b->shape(3);
+        if ((h == fcn_test_sz.height)
+                && (w == fcn_test_sz.width)) {
+            fcn = true;
         }
     }
 }

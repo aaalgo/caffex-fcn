@@ -40,10 +40,14 @@ class Caffex {
     }
     void checkReshape (cv::Mat const &image);   // reshape network to image size
     int dim () const;
+    bool fcn;
 public:
     Caffex (const string& model_dir, unsigned batch = 1);
     int batch () const {
         return input_batch;
+    }
+    bool is_fcn () const {
+        return fcn;
     }
     void apply (cv::Mat const &, vector<float> *);
     void apply (vector<cv::Mat> const &, cv::Mat *);    // might not work, haven't been tested
