@@ -11,6 +11,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/program_options.hpp>
+#include <boost/progress.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <opencv2/opencv.hpp>
@@ -243,31 +244,29 @@ public:
     {
     }
 
-    bool linear (cv::Mat from_image,
+    struct Delta {
+        cv::Scalar color;
+        float angle, scale;
+        bool flip;
+    };
+
+    void sample (Delta *p) {
+        p->flip = false;
+        p->color[0] = delta_color(e);
+        p->color[1] = delta_color(e);
+        p->color[2] = delta_color(e);
+        p->color[3] = delta_color(e);
+        p->angle = linear_angle(e);
+        p->scale = std::exp(linear_scale(e));
+    }
+
+    void linear (cv::Mat from_image,
                 cv::Mat from_label,
                 cv::Mat *to_image,
-                cv::Mat *to_label, bool no_perturb = false) {
-        if (no_perturb) {
-            *to_image = from_image;
-            *to_label = from_label;
-            return true;
-        }
+                cv::Mat *to_label, Delta const &delta) const {
         //float color, angle, scale, flip = false;
-        cv::Scalar color;
-        float angle, scale, flip = false;
-#pragma omp critical
-        {
-            //color = delta_color(e);
-            color[0] = delta_color(e);
-            color[1] = delta_color(e);
-            color[2] = delta_color(e);
-            color[3] = delta_color(e);
-            angle = linear_angle(e);
-            scale = std::exp(linear_scale(e));
-            //flip = ((e() % 2) == 1);
-        }
         cv::Mat image, label;
-        if (flip) {
+        if (delta.flip) {
             cv::flip(from_image, image, 1);
             cv::flip(from_label, label, 1);
         }
@@ -275,13 +274,12 @@ public:
             image = from_image;
             label = from_label;
         }
-        cv::resize(image, image, cv::Size(), scale, scale);
-        cv::resize(label, label, cv::Size(), scale, scale, cv::INTER_NEAREST);
-        cv::Mat rot = cv::getRotationMatrix2D(cv::Point(image.cols/2, image.rows/2), angle, 1.0);
+        cv::resize(image, image, cv::Size(), delta.scale, delta.scale);
+        cv::resize(label, label, cv::Size(), delta.scale, delta.scale, cv::INTER_NEAREST);
+        cv::Mat rot = cv::getRotationMatrix2D(cv::Point(image.cols/2, image.rows/2), delta.angle, 1.0);
         cv::warpAffine(image, *to_image, rot, image.size());
         cv::warpAffine(label, *to_label, rot, label.size(), cv::INTER_NEAREST); // cannot interpolate labels
-        *to_image += color;
-        return true;
+        *to_image += delta.color;
     }
 };
 
@@ -307,47 +305,66 @@ void import (vector<Sample> const &samples, fs::path const &dir, bool test_set =
         index[i] = i;
     }
     int n_rep = test_set ? 1 : replicate;
+
+    progress_display progress(n_rep * index.size(),cerr);
     for (int rep = 0; rep < n_rep; ++rep) {
         if (rep > 0) {
             random_shuffle(index.begin(), index.end());
         }
-        for (unsigned sid: index) {
-            auto const &sample = samples[sid];
-            Datum datum;
-            string key = lexical_cast<string>(count), value;
-            cv::Mat raw_image = imreadx(sample.url);
+#pragma omp parallel for
+        for (unsigned iid = 0; iid < index.size(); ++iid) {
+            auto const &sample = samples[index[iid]];
+            cv::Mat raw_image;
+            Sampler::Delta delta;
+            int ccount;
+#pragma omp critical
+            {
+                ccount = count++;
+                raw_image = imreadx(sample.url);
+                sampler.sample(&delta);
+                ++progress;
+            }
             if (!raw_image.data) {
                 LOG(ERROR) << "fail to load url: " << sample.url;
                 continue;
             }
+            Datum datum;
+            string key = lexical_cast<string>(ccount), ivalue, lvalue;
             cv::Mat raw_label(raw_image.size(), CV_8UC1, cv::Scalar(0));
             sample.anno.draw(&raw_label, cv::Scalar(1));
             cv::Mat image, label;
-            sampler.linear(raw_image, raw_label, &image, &label, rep == 0);
+            if (rep == 0) {
+                image = raw_image;
+                label = raw_label;
+            }
+            else {
+                sampler.linear(raw_image, raw_label, &image, &label, delta);
+            }
 
             caffe::CVMatToDatum(image, &datum);
             datum.set_label(0);
-            CHECK(datum.SerializeToString(&value));
-            image_txn->Put(key, value);
+            CHECK(datum.SerializeToString(&ivalue));
 
             caffe::CVMatToDatum(label, &datum);
             datum.set_label(0);
-            CHECK(datum.SerializeToString(&value));
-            label_txn->Put(key, value);
+            CHECK(datum.SerializeToString(&lvalue));
+#pragma omp critical
+            {
+                image_txn->Put(key, ivalue);
+                label_txn->Put(key, lvalue);
 
-            if (++count % 1000 == 0) {
-                // Commit db
-                image_txn->Commit();
-                image_txn.reset(image_db->NewTransaction());
-                label_txn->Commit();
-                label_txn.reset(label_db->NewTransaction());
+                if (ccount % 1000 == 0) {
+                    // Commit db
+                    image_txn->Commit();
+                    image_txn.reset(image_db->NewTransaction());
+                    label_txn->Commit();
+                    label_txn.reset(label_db->NewTransaction());
+                }
             }
         }
     }
-    if (count % 1000 != 0) {
-      image_txn->Commit();
-      label_txn->Commit();
-    }
+    image_txn->Commit();
+    label_txn->Commit();
 }
 
 void save_list (vector<Sample> const &samples, fs::path path) {
