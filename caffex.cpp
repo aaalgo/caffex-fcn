@@ -47,10 +47,43 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
     string mean_file = model_dir + "/caffe.mean";
     std::ifstream test(mean_file.c_str());
     if (test) {
-        means.clear();
-        float mean;
-        while (test >> mean) {
-            means.push_back(mean);
+        BlobProto blob_proto;
+        // check old format
+        if (ReadProtoFromBinaryFile(mean_file.c_str(), &blob_proto)) {
+            /* Convert from BlobProto to Blob<float> */
+            Blob<float> meanblob;
+            meanblob.FromProto(blob_proto);
+            CHECK_EQ(meanblob.channels(), input_channels)
+                << "Number of channels of mean file doesn't match input layer.";
+
+            /* The format of the mean file is planar 32-bit float BGR or grayscale. */
+            vector<cv::Mat> channels;
+            float* data = meanblob.mutable_cpu_data();
+            for (int i = 0; i < input_channels; ++i) {
+                /* Extract an individual channel. */
+                cv::Mat channel(meanblob.height(), meanblob.width(), CV_32FC1, data);
+                channels.push_back(channel);
+                data += meanblob.height() * meanblob.width();
+            }
+
+            /* Merge the separate channels into a single image. */
+            cv::Mat merged;
+            cv::merge(channels, merged);
+            cv::Scalar channel_mean = cv::mean(merged);
+            //mean = cv::Mat(input_height, input_width, merged.type(), channel_mean);
+            means.clear();
+            CHECK(input_channels <= 3);
+            for (int i = 0; i < input_channels; ++i) {
+                means.push_back(channel_mean[i]);
+            }
+        }
+        // if not proto format, then the mean file is just a bunch of textual numbers
+        else {
+            means.clear();
+            float mean;
+            while (test >> mean) {
+                means.push_back(mean);
+            }
         }
     }
     {
@@ -66,11 +99,14 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
     fcn = false;
     if (output_blobs.size() == 1) {
         auto b = output_blobs[0];
-        int h = b->shape(2);
-        int w = b->shape(3);
-        if ((h == fcn_test_sz.height)
-                && (w == fcn_test_sz.width)) {
-            fcn = true;
+        std::cerr << b->num_axes() << std::endl;
+        if (b->num_axes() == 4) {
+            int h = b->shape(2);
+            int w = b->shape(3);
+            if ((h == fcn_test_sz.height)
+                    && (w == fcn_test_sz.width)) {
+                fcn = true;
+            }
         }
     }
 }

@@ -222,21 +222,22 @@ cv::Mat imreadx (string const &url) {
     return v;
 }
 
-float sampler_angle = 10 * M_PI / 180;
+int sampler_color = 10;
+float sampler_angle = 10;
 float sampler_scale = 0.25;
 class Sampler {
     // regular
     /*
     float max_color;
-    std::uniform_real_distribution<float> delta_color; //(min_R, max_R);
     */
+    std::uniform_int_distribution<int> delta_color; //(min_R, max_R);
     std::uniform_real_distribution<float> linear_angle;
     std::uniform_real_distribution<float> linear_scale;
     std::default_random_engine e;
 public:
     Sampler ()
-        : /* max_color(config.get<float>("adsb2.aug.color", 20)),
-        delta_color(-max_color, max_color), */
+        : /* max_color(config.get<float>("adsb2.aug.color", 20)), */
+        delta_color(-sampler_color, sampler_color),
         linear_angle(-sampler_angle, sampler_angle),
         linear_scale(-sampler_scale, sampler_scale)
     {
@@ -252,10 +253,15 @@ public:
             return true;
         }
         //float color, angle, scale, flip = false;
+        cv::Scalar color;
         float angle, scale, flip = false;
 #pragma omp critical
         {
             //color = delta_color(e);
+            color[0] = delta_color(e);
+            color[1] = delta_color(e);
+            color[2] = delta_color(e);
+            color[3] = delta_color(e);
             angle = linear_angle(e);
             scale = std::exp(linear_scale(e));
             //flip = ((e() % 2) == 1);
@@ -269,12 +275,12 @@ public:
             image = from_image;
             label = from_label;
         }
-        cv::Mat rot = cv::getRotationMatrix2D(cv::Point(image.cols/2, image.rows/2), angle, scale);
+        cv::resize(image, image, cv::Size(), scale, scale);
+        cv::resize(label, label, cv::Size(), scale, scale, cv::INTER_NEAREST);
+        cv::Mat rot = cv::getRotationMatrix2D(cv::Point(image.cols/2, image.rows/2), angle, 1.0);
         cv::warpAffine(image, *to_image, rot, image.size());
         cv::warpAffine(label, *to_label, rot, label.size(), cv::INTER_NEAREST); // cannot interpolate labels
-        /*
         *to_image += color;
-        */
         return true;
     }
 };
@@ -317,9 +323,7 @@ void import (vector<Sample> const &samples, fs::path const &dir, bool test_set =
             cv::Mat raw_label(raw_image.size(), CV_8UC1, cv::Scalar(0));
             sample.anno.draw(&raw_label, cv::Scalar(1));
             cv::Mat image, label;
-            //sampler.linear(raw_image, raw_label, &image, &label, rep == 0);
-            image = raw_image;
-            label = raw_label;
+            sampler.linear(raw_image, raw_label, &image, &label, rep == 0);
 
             caffe::CVMatToDatum(image, &datum);
             datum.set_label(0);
@@ -375,6 +379,7 @@ int main(int argc, char **argv) {
     ("replicate,R", po::value(&replicate)->default_value(1), "")
     ("sangle", po::value(&sampler_angle)->default_value(sampler_angle), "")
     ("sscale", po::value(&sampler_scale)->default_value(sampler_scale), "")
+    ("scolor", po::value(&sampler_color)->default_value(sampler_color), "")
     ("max", po::value(&max_size)->default_value(max_size), "")
     ("log-level,v", po::value(&FLAGS_minloglevel)->default_value(1), "")
     ("cache", po::value(&cache_dir)->default_value(".caffex_cache"), "")
