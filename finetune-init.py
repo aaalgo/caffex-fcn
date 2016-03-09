@@ -28,7 +28,7 @@ params = {
         "val_interval": 1000,
         "display_interval": 1000,
         "snapshot_interval": 1000,
-        "max_iter": 15000,
+        "max_iter": 25000,
         "device": "GPU",
 }
 

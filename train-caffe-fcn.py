@@ -26,7 +26,7 @@ lists = sys.argv[3:]
 
 lines = []
 
-MAX_R = 2000
+MAX_R = 2500
 
 for p in lists:
     with open(p, 'r') as f:
