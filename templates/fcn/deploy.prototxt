@@ -3,7 +3,7 @@ force_backward: true
 input: "data"
 # We will manipulate the input_dim fields below in Python during testing. They appear here only for syntactic reasons.
 input_dim: 1
-input_dim: 1
+input_dim: 3
 input_dim: 1
 input_dim: 1
 layer {
