@@ -311,13 +311,13 @@ void import (vector<Sample> const &samples, fs::path const &dir, bool test_set =
         if (rep > 0) {
             random_shuffle(index.begin(), index.end());
         }
-#pragma omp parallel for
+//#pragma omp parallel for
         for (unsigned iid = 0; iid < index.size(); ++iid) {
             auto const &sample = samples[index[iid]];
             cv::Mat raw_image;
             Sampler::Delta delta;
             int ccount;
-#pragma omp critical
+//#pragma omp critical
             {
                 ccount = count++;
                 raw_image = imreadx(sample.url);
@@ -348,7 +348,7 @@ void import (vector<Sample> const &samples, fs::path const &dir, bool test_set =
             caffe::CVMatToDatum(label, &datum);
             datum.set_label(0);
             CHECK(datum.SerializeToString(&lvalue));
-#pragma omp critical
+//#pragma omp critical
             {
                 image_txn->Put(key, ivalue);
                 label_txn->Put(key, lvalue);
