@@ -15,7 +15,7 @@ LDLIBS =  -Wl,--whole-archive -lcaffe -Wl,--no-whole-archive \
 	 -lgomp \
 	 -lunwind -lrt -lm -ldl
 
-PROGS = import-images sample_db #run caffex-extract	caffex-predict batch-resize import-images
+PROGS = import-images sample_db visualize #run caffex-extract	caffex-predict batch-resize import-images
 
 all:	$(PROGS)
 
