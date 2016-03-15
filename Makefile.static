@@ -21,10 +21,12 @@ all:	$(PROGS)
 
 caffex-extract:	caffex-extract.cpp caffex.cpp
 
+draw-contour:	draw-contour.cpp
+
 caffex-predict:	caffex-predict.cpp caffex.cpp
 
 caffex-compare:	caffex-compare.cpp caffex.cpp
 
-run:	run.cpp caffex.o
+visualize:	visualize.cpp caffex.o
 
 batch-resize:	batch-resize.cpp
