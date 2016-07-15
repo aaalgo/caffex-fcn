@@ -27,6 +27,6 @@ caffex-predict:	caffex-predict.cpp caffex.cpp
 
 caffex-compare:	caffex-compare.cpp caffex.cpp
 
-visualize:	visualize.cpp caffex.o
+visualize:	visualize.cpp caffex.o bbox.o
 
 batch-resize:	batch-resize.cpp

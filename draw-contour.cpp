@@ -170,6 +170,7 @@ cv::Mat imreadx (string const &url) {
 int main(int argc, char **argv) {
     namespace po = boost::program_options; 
     string output_path;
+    int thickness;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -179,6 +180,7 @@ int main(int argc, char **argv) {
     ("agent", po::value(&download_agent), "")
     ("log-level,v", po::value(&FLAGS_minloglevel)->default_value(1), "")
     ("tmp", po::value(&temp_dir), "")
+    ("thickness,t", po::value(&thickness)->default_value(3), "")
     ;
 
     po::positional_options_description p;
@@ -217,7 +219,7 @@ int main(int argc, char **argv) {
             s.anno.draw(&image, cv::Scalar(0), 1);
         }
         else {
-            s.anno.draw(&image, cv::Scalar(0, 0, 0xFF), 1);
+            s.anno.draw(&image, cv::Scalar(0, 0, 0xFF), thickness);
         }
         cv::imwrite(output_path, image);
         break;

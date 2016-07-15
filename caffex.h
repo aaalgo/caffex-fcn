@@ -22,6 +22,7 @@ class Caffex {
     int input_batch;
     int input_channels;
     vector<float> means;
+    string _extra;
     Blob<float> *input_blob;
     vector<shared_ptr<Blob<float>>> output_blobs;
 
@@ -48,6 +49,9 @@ public:
     }
     bool is_fcn () const {
         return fcn;
+    }
+    string const &extra () const {
+        return _extra;
     }
     void apply (cv::Mat const &, vector<float> *);
     void apply (vector<cv::Mat> const &, cv::Mat *);    // might not work, haven't been tested

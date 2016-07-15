@@ -1,3 +1,4 @@
+#include <queue>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -39,6 +40,20 @@ Caffex::Caffex(string const& model_dir, unsigned batch)
     }
     input_blob->Reshape(input_batch, input_channels, input_h, input_w); // placeholder, not used anyway
     net.Reshape();
+
+    {
+        string extra_file = model_dir + "/extra";
+        std::ifstream fin(extra_file.c_str());
+        if (fin) {
+            fin.seekg(0, std::ios::end);
+            _extra.resize(fin.tellg());
+            fin.seekg(0);
+            fin.read(&_extra[0], _extra.size());
+            if (!fin) {
+                LOG(WARNING) << "Error reading extra file.";
+            }
+        }
+    }
 
     // set mean file
     means.push_back(0);
@@ -199,11 +214,13 @@ void Caffex::extractOutputValues (float *ptr, int output_dim, int n) {
 
 void Caffex::checkReshape (cv::Mat const &image) {
     if (!fix_shape) {
+        int rows = image.rows;
+        int cols = image.cols;
         int input_height = input_blob->shape(2);
         int input_width = input_blob->shape(3);
-        if ((input_width != image.cols)
-                || (input_height != image.rows)) {
-            input_blob->Reshape(input_batch, input_channels, image.rows, image.cols);
+        if ((input_width != cols)
+                || (input_height != rows)) {
+            input_blob->Reshape(input_batch, input_channels, rows, cols);
             net.Reshape();
         }
     }
@@ -252,6 +269,7 @@ void Caffex::apply(vector<cv::Mat> const &images, cv::Mat *ft) {
     ft->create(images.size(), output_dim, CV_32FC1);
     extractOutputValues(ft->ptr<float>(0), output_dim, images.size());
 }
+
 
 }
 
