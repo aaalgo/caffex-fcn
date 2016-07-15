@@ -57,5 +57,6 @@ public:
     void apply (vector<cv::Mat> const &, cv::Mat *);    // might not work, haven't been tested
 };
 
+
 }
 
